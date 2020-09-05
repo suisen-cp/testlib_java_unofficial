@@ -124,7 +124,7 @@ public class InputVerifier {
         for (;isPrintableAsciiCharacter(b); b = readByte()) {
             sb.appendCodePoint(b);
         }
-        undo[undolen++] = (byte) b;
+        if (b != -1) undo[undolen++] = (byte) b;
         if (sb.length() == 0) {
             throw new InputVerificationException(line, "Token", toReadableString(b));
         }
