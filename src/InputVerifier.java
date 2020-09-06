@@ -82,6 +82,15 @@ public class InputVerifier implements AutoCloseable {
 
     public void nextEoln() {
         int b = nextByte();
+        if (isCarriageReturn(b)) {
+            b = nextByte();
+            undo('\r'); undo(b);
+            if (isEoln(b)) {
+                throw new InputVerificationException(line, "Eoln (LF)", "Eoln (CRLF)");
+            } else {
+                throw new InputVerificationException(line, "Eoln (LF)", "Eoln (CR)");
+            }
+        }
         if (!isEoln(b)) {
             undo(b);
             throw new InputVerificationException(line, "Eoln", toReadableString(b));
@@ -105,12 +114,34 @@ public class InputVerifier implements AutoCloseable {
         return (char) b;
     }
 
+    public char nextChar(char expected) {
+        int b = nextByte();
+        if (b != expected) {
+            undo(b);
+            throw new InputVerificationException(
+                line, 
+                "code point " + (int) expected + " = " + toReadableString(expected), 
+                "code point " + b + " = " + toReadableString(b)
+            );
+        }
+        return (char) b;
+    }
+
     public String nextLine() {
         if (!hasNextByte()) {
             throw new InputVerificationException(line, "Line", "Eof");
         }
         StringBuilder sb = new StringBuilder();
         for (int b = nextByte(); !isEoln(b); b = nextByte()) {
+            if (isCarriageReturn(b)) {
+                b = nextByte();
+                undo('\r'); undo(b);
+                if (isEoln(b)) {
+                    throw new InputVerificationException(line, "Eoln (LF)", "Eoln (CRLF)");
+                } else {
+                    throw new InputVerificationException(line, "Eoln (LF)", "Eoln (CR)");
+                }
+            }
             sb.appendCodePoint(b);
         }
         return sb.toString();
@@ -500,6 +531,10 @@ public class InputVerifier implements AutoCloseable {
 
     private static boolean isEoln(int codePoint) {
         return codePoint == '\n';
+    }
+
+    private static boolean isCarriageReturn(int codePoint) {
+        return codePoint == '\r';
     }
 
     private static boolean isSpace(int codePoint) {
